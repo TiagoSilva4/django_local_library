@@ -1,3 +1,4 @@
+import datetime
 from django.db import models
 
 # Create your models here.
@@ -5,6 +6,10 @@ from django.db import models
 from django.urls import reverse  # To generate URLS by reversing URL patterns
 from django.db.models import UniqueConstraint
 from django.db.models.functions import Lower
+from django.conf import settings
+from datetime import date
+from django.utils.translation import gettext as _
+
 
 class Genre(models.Model):
     """Model representing a book genre (e.g. Science Fiction, Non Fiction)."""
@@ -134,6 +139,12 @@ class BookInstance(models.Model):
         """Returns the url to access a particular book instance."""
         return reverse('bookinstance-detail', args=[str(self.id)])
 
+    @property
+    def is_overdue(self):
+        """Determines if the book is overdue based on due date and current date."""
+        return bool(self.due_back and date.today() > self.due_back)
+
+
     def __str__(self):
         """String for representing the Model object."""
         return f'{self.id} ({self.book.title})'
@@ -156,3 +167,29 @@ class Author(models.Model):
     def __str__(self):
         """String for representing the Model object."""
         return f'{self.last_name}, {self.first_name}'
+    
+from django.forms import ModelForm, ValidationError
+
+from catalog.models import BookInstance
+from datetime import date
+
+class RenewBookModelForm(ModelForm):
+    def clean_due_back(self):
+       data = self.cleaned_data['due_back']
+
+       # Check if a date is not in the past.
+       if data < datetime.date.today():
+           raise ValidationError(_('Invalid date - renewal in past'))
+
+       # Check if a date is in the allowed range (+4 weeks from today).
+       if data > datetime.date.today() + datetime.timedelta(weeks=4):
+           raise ValidationError(_('Invalid date - renewal more than 4 weeks ahead'))
+
+       # Remember to always return the cleaned data.
+       return data
+
+    class Meta:
+        model = BookInstance
+        fields = ['due_back']
+        labels = {'due_back': _('Renewal date')}
+        help_texts = {'due_back': _('Enter a date between now and 4 weeks (default 3).')}

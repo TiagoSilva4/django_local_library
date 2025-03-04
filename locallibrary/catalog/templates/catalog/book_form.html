@@ -1,0 +1,22 @@
+{% extends "base_generic.html" %}
+
+{% block content %}
+  {% if book %}
+    <h1>Update Book: {{ book.title }}</h1>
+  {% else %}
+    <h1>Create Book</h1>
+  {% endif %}
+  
+  <form action="" method="post">
+    {% csrf_token %}
+    <table>
+      {{ form.as_table }}
+    </table>
+    <input type="submit" value="Submit">
+    {% if book %}
+      <a href="{% url 'book-detail' book.pk %}">Cancel</a>
+    {% else %}
+      <a href="{% url 'books' %}">Cancel</a>
+    {% endif %}
+  </form>
+{% endblock %}
