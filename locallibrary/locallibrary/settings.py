@@ -4,7 +4,6 @@ import os
 import sys
 import dj_database_url
 
-
 from pathlib import Path
 import environ
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -146,3 +145,16 @@ STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 
 # Fix for template directory
 TEMPLATES[0]['DIRS'] = [os.path.join(BASE_DIR, 'templates')]
+
+# Add auto-migration for DigitalOcean App Platform
+# This helps with SQLite on ephemeral storage
+if 'runserver' not in sys.argv and 'test' not in sys.argv:
+    try:
+        import django
+        from django.core.management import call_command
+        django.setup()
+        print("Running migrations automatically at startup")
+        call_command('migrate', interactive=False, verbosity=1)
+        print("Automatic migrations complete")
+    except Exception as e:
+        print(f"Error during automatic migrations: {e}")
